@@ -1,19 +1,19 @@
 defmodule CounterSupervisor do
-  use Supervisor
+  use DynamicSupervisor
 
   # Client/ public api
-
   def start_link(init_args) do
-    Supervisor.start_link(__MODULE__, init_args)
+    DynamicSupervisor.start_link(__MODULE__, init_args, name: __MODULE__)
   end
 
   # Callbacks
 
-  def init(init_args) do
-    children = [
-      {Counter, init_args}
-    ]
+  def init(_init_args) do
+    DynamicSupervisor.init(strategy: :one_for_one)
+  end
 
-    Supervisor.init(children, strategy: :one_for_one)
+  def start_child(initial_count, name) do
+    spec = {Counter, initial_count: initial_count, name: name}
+    DynamicSupervisor.start_child(__MODULE__, spec)
   end
 end

@@ -4,8 +4,11 @@ defmodule Counter do
   # public APIs
   # when we invoke start link, it will call init which will return
   # a tuple of ok and initial_count aka will set the state inside the process
-  def start_link(initial_count) do
-    GenServer.start_link(__MODULE__, initial_count)
+  def start_link(args) do
+    initial_count = Keyword.get(args, :initial_count, 0)
+    name = Keyword.get(args, :name)
+
+    GenServer.start_link(__MODULE__, initial_count, name: name)
   end
 
   def increment(pid) do
@@ -30,9 +33,10 @@ defmodule Counter do
   # this is a callback function ie wo'nt be called directly
   # will be called by genserver otp library in response to some event
   def init(initial_count) do
+    {:registered_name, name} = Process.info(self(), :registered_name)
     # restore the initial state after a crash
     initial_count =
-      case Cache.lookup(__MODULE__) do
+      case Cache.lookup(name) do
         {:ok, count} -> count
         :error -> initial_count
       end
@@ -62,6 +66,7 @@ defmodule Counter do
   end
 
   def terminate(_reason, count) do
-    Cache.save(__MODULE__, count)
+    {:registered_name, name} = Process.info(self(), :registered_name)
+    Cache.save(name, count)
   end
 end
